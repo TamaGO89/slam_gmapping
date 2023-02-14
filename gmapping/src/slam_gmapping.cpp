@@ -641,6 +641,8 @@ SlamGMapping::laserCallback(const sensor_msgs::LaserScan::ConstPtr& scan)
     map_to_odom_ = (odom_to_laser * laser_to_map).inverse();
     map_to_odom_mutex_.unlock();
 
+    // Moved the lock here to avoid a queue of laser scans when the variable last_map_update takes to much to be updated to the latest value
+    boost::mutex::scoped_lock map_lock (map_mutex_);
     if(!got_map_ || (scan->header.stamp - last_map_update) > map_update_interval_)
     {
       updateMap(*scan);
@@ -676,7 +678,8 @@ void
 SlamGMapping::updateMap(const sensor_msgs::LaserScan& scan)
 {
   ROS_DEBUG("Update map");
-  boost::mutex::scoped_lock map_lock (map_mutex_);
+  // Moved this lock up
+  // boost::mutex::scoped_lock map_lock (map_mutex_);
   GMapping::ScanMatcher matcher;
 
   matcher.setLaserParameters(scan.ranges.size(), &(laser_angles_[0]),
