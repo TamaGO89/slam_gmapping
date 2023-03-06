@@ -43,6 +43,9 @@
 
 #include <boost/thread.hpp>
 
+// EDIT : START & STOP
+#include <std_srvs/SetBool.h>
+
 class SlamGMapping
 {
   public:
@@ -150,4 +153,28 @@ class SlamGMapping
     
     double transform_publish_period_;
     double tf_delay_;
+
+    // EDIT : START & STOP
+    ros::ServiceServer start_n_stop_service_;
+    bool start_n_stop=false;
+    bool inline startstopCallback(std_srvs::SetBool::Request  &req,
+                                  std_srvs::SetBool::Response &res){
+      if ( start_n_stop != req.data ) {
+        // Reset variables
+        laser_count_ = 0;
+        got_first_scan_ = false;
+        // Delete pointers
+        delete gsp_;
+        if(gsp_laser_)
+          delete gsp_laser_;
+        if(gsp_odom_)
+          delete gsp_odom_;
+        gsp_ = new GMapping::GridSlamProcessor();
+        ROS_ASSERT(gsp_);
+        // Update start_n_stop variable
+        start_n_stop = req.data;
+      }
+      res.success = true;
+      return true;
+    };
 };

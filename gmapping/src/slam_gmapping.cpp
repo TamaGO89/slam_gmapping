@@ -166,6 +166,7 @@ SlamGMapping::SlamGMapping(long unsigned int seed, long unsigned int max_duratio
 
 void SlamGMapping::init()
 {
+  ROS_INFO(" !! AUTOGNITY !!");
   // log4cxx::Logger::getLogger(ROSCONSOLE_DEFAULT_NAME)->setLevel(ros::console::g_level_lookup[ros::console::levels::Debug]);
 
   // The library is pretty chatty
@@ -277,6 +278,8 @@ void SlamGMapping::startLiveSlam()
   scan_filter_->registerCallback(boost::bind(&SlamGMapping::laserCallback, this, _1));
 
   transform_thread_ = new boost::thread(boost::bind(&SlamGMapping::publishLoop, this, transform_publish_period_));
+  // EDIT : START & STOP
+  start_n_stop_service_ = node_.advertiseService("/gmapping/start_n_stop", &SlamGMapping::startstopCallback, this);
 }
 
 void SlamGMapping::startReplay(const std::string & bag_fname, std::string scan_topic)
@@ -609,6 +612,8 @@ SlamGMapping::addScan(const sensor_msgs::LaserScan& scan, GMapping::OrientedPoin
 void
 SlamGMapping::laserCallback(const sensor_msgs::LaserScan::ConstPtr& scan)
 {
+  // EDIT : START & STOP
+  if ( ! start_n_stop ) return;
   laser_count_++;
   if ((laser_count_ % throttle_scans_) != 0)
     return;
@@ -641,6 +646,8 @@ SlamGMapping::laserCallback(const sensor_msgs::LaserScan::ConstPtr& scan)
     map_to_odom_ = (odom_to_laser * laser_to_map).inverse();
     map_to_odom_mutex_.unlock();
 
+    // EDIT : Moved the lock here
+    boost::mutex::scoped_lock map_lock (map_mutex_);
     if(!got_map_ || (scan->header.stamp - last_map_update) > map_update_interval_)
     {
       updateMap(*scan);
@@ -676,7 +683,8 @@ void
 SlamGMapping::updateMap(const sensor_msgs::LaserScan& scan)
 {
   ROS_DEBUG("Update map");
-  boost::mutex::scoped_lock map_lock (map_mutex_);
+  // EDIT : Remove the lock from here, moved down
+  // boost::mutex::scoped_lock map_lock (map_mutex_);
   GMapping::ScanMatcher matcher;
 
   matcher.setLaserParameters(scan.ranges.size(), &(laser_angles_[0]),
@@ -797,6 +805,8 @@ SlamGMapping::mapCallback(nav_msgs::GetMap::Request  &req,
 
 void SlamGMapping::publishTransform()
 {
+  // EDIT : START & STOP
+  if ( ! start_n_stop ) return;
   map_to_odom_mutex_.lock();
   ros::Time tf_expiration = ros::Time::now() + ros::Duration(tf_delay_);
   tfB_->sendTransform( tf::StampedTransform (map_to_odom_, tf_expiration, map_frame_, odom_frame_));
