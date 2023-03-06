@@ -166,7 +166,7 @@ SlamGMapping::SlamGMapping(long unsigned int seed, long unsigned int max_duratio
 
 void SlamGMapping::init()
 {
-  ROS_INFO(" !! AUTOGNITY !!");
+  ROS_INFO(" !! SLAM - AUTOGNITY !!");
   // log4cxx::Logger::getLogger(ROSCONSOLE_DEFAULT_NAME)->setLevel(ros::console::g_level_lookup[ros::console::levels::Debug]);
 
   // The library is pretty chatty
