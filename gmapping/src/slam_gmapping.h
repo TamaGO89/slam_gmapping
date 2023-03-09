@@ -97,6 +97,7 @@ class SlamGMapping
     tf::Transform map_to_odom_;
     boost::mutex map_to_odom_mutex_;
     boost::mutex map_mutex_;
+    boost::mutex start_n_stop_mutex_;
 
     int laser_count_;
     int throttle_scans_;
@@ -159,21 +160,32 @@ class SlamGMapping
     bool start_n_stop=false;
     bool inline startstopCallback(std_srvs::SetBool::Request  &req,
                                   std_srvs::SetBool::Response &res){
-      if ( start_n_stop != req.data ) {
+      boost::lock_guard<boost::mutex> start_n_stop_lock(start_n_stop_mutex_);
+      if ( start_n_stop == req.data ) {
+        res.success = true;
+        return true;
+      }
+      // Update start_n_stop variable
+      if ( req.data ) {
         // Reset variables
         laser_count_ = 0;
         got_first_scan_ = false;
         // Delete pointers
         delete gsp_;
-        if(gsp_laser_)
+        gsp_ = NULL;
+        if(gsp_laser_) {
           delete gsp_laser_;
-        if(gsp_odom_)
+          gsp_laser_ = NULL;
+        }
+        if(gsp_odom_) {
           delete gsp_odom_;
+          gsp_odom_ = NULL;
+        }
+        // Init processor
         gsp_ = new GMapping::GridSlamProcessor();
         ROS_ASSERT(gsp_);
-        // Update start_n_stop variable
-        start_n_stop = req.data;
       }
+      start_n_stop = req.data;
       res.success = true;
       return true;
     };

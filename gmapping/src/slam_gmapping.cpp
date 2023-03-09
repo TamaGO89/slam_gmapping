@@ -613,20 +613,22 @@ void
 SlamGMapping::laserCallback(const sensor_msgs::LaserScan::ConstPtr& scan)
 {
   // EDIT : START & STOP
-  if ( ! start_n_stop ) return;
-  laser_count_++;
-  if ((laser_count_ % throttle_scans_) != 0)
-    return;
-
-  static ros::Time last_map_update(0,0);
-
-  // We can't initialize the mapper until we've got the first scan
-  if(!got_first_scan_)
   {
-    if(!initMapper(*scan))
+    boost::lock_guard<boost::mutex> start_n_stop_lock(start_n_stop_mutex_);
+    if ( ! start_n_stop ) return;
+    laser_count_++;
+    if ((laser_count_ % throttle_scans_) != 0)
       return;
-    got_first_scan_ = true;
+
+    // We can't initialize the mapper until we've got the first scan
+    if(!got_first_scan_)
+    {
+      if(!initMapper(*scan))
+        return;
+      got_first_scan_ = true;
+    }
   }
+  static ros::Time last_map_update(0,0);
 
   GMapping::OrientedPoint odom_pose;
 
