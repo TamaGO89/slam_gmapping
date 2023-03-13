@@ -97,7 +97,6 @@ class SlamGMapping
     tf::Transform map_to_odom_;
     boost::mutex map_to_odom_mutex_;
     boost::mutex map_mutex_;
-    boost::mutex start_n_stop_mutex_;
 
     int laser_count_;
     int throttle_scans_;
@@ -147,6 +146,7 @@ class SlamGMapping
     double llsamplestep_;
     double lasamplerange_;
     double lasamplestep_;
+    int increment_;
     
     ros::NodeHandle private_nh_;
     
@@ -155,7 +155,10 @@ class SlamGMapping
     double transform_publish_period_;
     double tf_delay_;
 
-    // EDIT : START & STOP
+    // EDIT : NODE NAME : Used to identify this node inside the TGO framework
+    std::string node_name_;
+    // EDIT : START & STOP : LOCK : Allows start-n-stop of gmapping with a safe lock
+    boost::mutex start_n_stop_mutex_;
     ros::ServiceServer start_n_stop_service_;
     bool start_n_stop=false;
     bool inline startstopCallback(std_srvs::SetBool::Request  &req,
