@@ -164,11 +164,12 @@ class SlamGMapping
     bool inline startstopCallback(std_srvs::SetBool::Request  &req,
                                   std_srvs::SetBool::Response &res){
       boost::lock_guard<boost::mutex> start_n_stop_lock(start_n_stop_mutex_);
+      // If nothing changed just return from the callback
       if ( start_n_stop == req.data ) {
         res.success = true;
         return true;
       }
-      // Update start_n_stop variable
+      // If a start request arrived and slam was stopped
       if ( req.data ) {
         // Reset variables
         laser_count_ = 0;
@@ -188,6 +189,7 @@ class SlamGMapping
         gsp_ = new GMapping::GridSlamProcessor();
         ROS_ASSERT(gsp_);
       }
+      // Align slam and request
       start_n_stop = req.data;
       res.success = true;
       return true;
