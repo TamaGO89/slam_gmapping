@@ -30,6 +30,7 @@
 /* Author: Brian Gerkey */
 
 #include <ros/ros.h>
+#include <ros/console.h>
 
 #include "slam_gmapping.h"
 
@@ -37,6 +38,10 @@ int
 main(int argc, char** argv)
 {
   ros::init(argc, argv, "slam_gmapping");
+
+  // EDIT : 2023-05-30 : Set log level
+  if ( ros::console::set_logger_level(ROSCONSOLE_DEFAULT_NAME,ros::console::levels::Warn) )
+    ros::console::notifyLoggerLevelsChanged();
 
   SlamGMapping gn;
   gn.startLiveSlam();
